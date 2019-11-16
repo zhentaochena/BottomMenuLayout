@@ -260,8 +260,21 @@ public class BottomMenuLayout extends FrameLayout {
             float iconStartX = startX - child.getMeasuredWidth() * 0.5f;
             float iconStartY = startY - child.getMeasuredHeight() * 0.5f;
 
+
             //根据显示隐藏来确定是否交换起始点与终点的值
             if (!isShow) {
+
+                iconStartX = (float) (width - width * 0.4f * Math.cos(childRadian * i + divideRadian)
+                                        - child.getMeasuredWidth() * 0.5f);
+
+                if (!isRight) {
+                    iconStartX = (float) (width * 0.4f * Math.cos(childRadian * i + divideRadian)
+                            - child.getMeasuredWidth() * 0.5f);
+                }
+
+                iconStartY = (float) (height - height * 0.4f * Math.sin(childRadian * i + divideRadian)) -
+                        child.getMeasuredHeight() * 0.5f;
+
                 float temp = iconX;
                 iconX = iconStartX;
                 iconStartX = temp;
@@ -281,12 +294,17 @@ public class BottomMenuLayout extends FrameLayout {
             animatorList.add(set);
         }
 
+        long duration = 300L;
+        if (!isShow) {
+            duration = 200L;
+        }
+
         AnimatorSet menuAnimatorSet = new AnimatorSet();
-        menuAnimatorSet.setDuration(300);
+        menuAnimatorSet.setDuration(duration);
         menuAnimatorSet.playTogether(animatorList);
 
         AnimatorSet shutDownAnimatorSet = new AnimatorSet();
-        shutDownAnimatorSet.setDuration(300);
+        shutDownAnimatorSet.setDuration(duration);
         View view = getChildAt(getChildCount() - 1);
         view.setVisibility(INVISIBLE);
         view.setPivotX(view.getMeasuredWidth() * 0.5f);
