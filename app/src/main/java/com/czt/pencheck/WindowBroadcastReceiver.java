@@ -39,6 +39,13 @@ public class WindowBroadcastReceiver extends BroadcastReceiver {
                 case MSG_HIDE_RIGHT_WINDOW:
                     rightView.hideMenu();
                     break;
+                default:
+                    if (msg % 10 == 0 && msg < 100) {
+                        rightView.addItem(R.mipmap.annotation, "批注", 2, false);
+                    } else if (msg % 100 == 0) {
+                        rightView.removeItemAt(2, false);
+                    }
+
             }
         }
     }

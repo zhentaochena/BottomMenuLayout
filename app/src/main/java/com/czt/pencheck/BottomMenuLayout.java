@@ -18,10 +18,13 @@ import android.graphics.RectF;
 import android.graphics.Region;
 import android.os.Build;
 import android.util.AttributeSet;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -32,6 +35,8 @@ import java.util.List;
 public class BottomMenuLayout extends FrameLayout {
 
     private static final String TAG = "BottomMenuView";
+
+    private Context layoutContext;
 
     private boolean isShowing = false;
 
@@ -88,20 +93,26 @@ public class BottomMenuLayout extends FrameLayout {
 
     public BottomMenuLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        this.layoutContext = context;
         TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.BottomMenuLayout);
 
         isRight = typedArray.getBoolean(R.styleable.BottomMenuLayout_isRight, true);
 
         typedArray.recycle();
-    }
 
+        if (attrs == null) {
+            LayoutInflater inflater = LayoutInflater.from(context);
+            View shutDownView = inflater.inflate(R.layout.item_shut_down, null);
+            this.addView(shutDownView, -1);
+        }
+
+    }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
 
         totalRegion = new Region(0, 0, w, h);
-        divideArea();
 
         bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         bitmapCanvas = new Canvas(bitmap);
@@ -113,6 +124,7 @@ public class BottomMenuLayout extends FrameLayout {
      * 初始化
      */
     private void init(){
+        divideArea();
 
         //初始化画笔
         sectorPaint = new Paint();
@@ -199,9 +211,9 @@ public class BottomMenuLayout extends FrameLayout {
     }
 
     /**
-     * 根据是否显示来构造组合动画
-     * @param isShow 是否显示
-     * @return 组合动画
+     * 根据是否显示来构造组合动画.
+     * @param isShow 是否显示.
+     * @return 组合动画.
      */
     private AnimatorSet createAnimatorSet(boolean isShow) {
 
@@ -296,13 +308,12 @@ public class BottomMenuLayout extends FrameLayout {
 
         resultSet = new AnimatorSet();
         resultSet.playTogether(menuAnimatorSet, shutDownAnimatorSet);
-
         return resultSet;
     }
 
     /**
-     * 绘制扇形区域
-     * @param val 缩放大小
+     * 绘制扇形区域.
+     * @param val 缩放大小.
      */
     private void drawContent(float val) {
         float len = width * val;
@@ -344,6 +355,7 @@ public class BottomMenuLayout extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
         width = MeasureSpec.getSize(widthMeasureSpec);
         height = MeasureSpec.getSize(heightMeasureSpec);
         if (width > height) {
@@ -354,7 +366,6 @@ public class BottomMenuLayout extends FrameLayout {
 
         for (int i = 0; i < getChildCount(); i++) {
             View view = getChildAt(i);
-            ViewGroup.LayoutParams lp = view.getLayoutParams();
             measureChild(view, widthMeasureSpec, heightMeasureSpec);
         }
 
@@ -362,64 +373,70 @@ public class BottomMenuLayout extends FrameLayout {
     }
 
     /**
-     * 分割区域
+     * 分割区域.
      */
     private void divideArea() {
 
-        childRadian = Math.PI / (2 * (getChildCount() - 1));
-        childAngle = 90 / (getChildCount() - 1);
+        totalRegion = new Region(0, 0, width, height);
 
-        RectF oval = new RectF(0, 0, width * 2, height * 2);
-        RectF halfOval = new RectF(width - width * ratio, height - height * ratio,
-                width + width * ratio, height + height * ratio);
+        pathRegionList.clear();
 
-        if (!isRight) {
-            oval = new RectF(-width, 0, width, height * 2);
-            halfOval = new RectF(- width * ratio, height - height * ratio,
-                    width * ratio, height + height * ratio);
-        }
+        if (getChildCount() > 1) {
+            childRadian = Math.PI / (2 * (getChildCount() - 1));
+            childAngle = 90 / (getChildCount() - 1);
 
-        PathRegion hideRegion = new PathRegion();
-        Path hidePath = new Path();
+            RectF oval = new RectF(0, 0, width * 2, height * 2);
+            RectF halfOval = new RectF(width - width * ratio, height - height * ratio,
+                    width + width * ratio, height + height * ratio);
 
-        if (isRight) {
-            hidePath.moveTo(width, height);
-        }
-        else {
-            hidePath.moveTo(0, height);
-        }
+            if (!isRight) {
+                oval = new RectF(-width, 0, width, height * 2);
+                halfOval = new RectF(- width * ratio, height - height * ratio,
+                        width * ratio, height + height * ratio);
+            }
 
-        float startAngle = 180;
-        if (!isRight) startAngle = 270;
+            PathRegion hideRegion = new PathRegion();
+            Path hidePath = new Path();
 
-        hidePath.arcTo(halfOval, startAngle, 90);
-        hideRegion.path = hidePath;
-        Region hide = new Region();
-        hide.setPath(hidePath, totalRegion);
-        hideRegion.region = hide;
-
-        for (int i = 0; i < getChildCount() - 1; i++) {
-            Path path = new Path();
             if (isRight) {
-                path.moveTo(width, height);
-            } else {
-                path.moveTo(0, height);
+                hidePath.moveTo(width, height);
+            }
+            else {
+                hidePath.moveTo(0, height);
             }
 
-            path.arcTo(oval, startAngle + childAngle * i, childAngle);
+            float startAngle = 180;
+            if (!isRight) startAngle = 270;
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                path.op(hidePath, Path.Op.DIFFERENCE);
+            hidePath.arcTo(halfOval, startAngle, 90);
+            hideRegion.path = hidePath;
+            Region hide = new Region();
+            hide.setPath(hidePath, totalRegion);
+            hideRegion.region = hide;
+
+            for (int i = 0; i < getChildCount() - 1; i++) {
+                Path path = new Path();
+                if (isRight) {
+                    path.moveTo(width, height);
+                } else {
+                    path.moveTo(0, height);
+                }
+
+                path.arcTo(oval, startAngle + childAngle * i, childAngle);
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    path.op(hidePath, Path.Op.DIFFERENCE);
+                }
+
+                Region region = new Region();
+                region.setPath(path, totalRegion);
+                PathRegion pathRegion = new PathRegion();
+                pathRegion.path = path;
+                pathRegion.region = region;
+                pathRegionList.add(pathRegion);
             }
-
-            Region region = new Region();
-            region.setPath(path, totalRegion);
-            PathRegion pathRegion = new PathRegion();
-            pathRegion.path = path;
-            pathRegion.region = region;
-            pathRegionList.add(pathRegion);
+            pathRegionList.add(hideRegion);
         }
-        pathRegionList.add(hideRegion);
 
     }
 
@@ -435,27 +452,24 @@ public class BottomMenuLayout extends FrameLayout {
         if (isShowing && !isAnimatorRunning()) {
             switch (event.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
-                    onDown(event);
-                    break;
                 case MotionEvent.ACTION_MOVE:
                     onMove(event);
                     break;
                 case MotionEvent.ACTION_UP:
-                    onUp();
+                    onUp(event);
                     break;
             }
         }
         return true;
     }
 
-    private void onDown(MotionEvent event) {
+    private void onUp(MotionEvent event) {
         clearCanvas();
         drawContent(1);
         float x = event.getX();
         float y = event.getY();
         for (int i = 0; i < pathRegionList.size(); i++) {
             if (pathRegionList.get(i).region.contains((int) x, (int) y)) {
-                bitmapCanvas.drawPath(pathRegionList.get(i).path, maskPaint);
                 if (i < pathRegionList.size() - 1) {
                     if (onItemClickListener != null) {
                         if (isRight) {
@@ -471,12 +485,6 @@ public class BottomMenuLayout extends FrameLayout {
                 }
             }
         }
-        invalidate();
-    }
-
-    private void onUp() {
-        clearCanvas();
-        drawContent(1);
         invalidate();
     }
 
@@ -520,7 +528,7 @@ public class BottomMenuLayout extends FrameLayout {
     }
 
     /**
-     * 清除画布
+     * 清除画布.
      */
     private void clearCanvas() {
         Paint p = new Paint();
@@ -538,8 +546,8 @@ public class BottomMenuLayout extends FrameLayout {
     }
 
     /**
-     * 绘制分割线
-     * @param r 半径
+     * 绘制分割线.
+     * @param r 半径.
      */
     private void drawSplitLine(float r){
 
@@ -565,7 +573,7 @@ public class BottomMenuLayout extends FrameLayout {
     }
 
     /**
-     * 用于判断点击区域
+     * 用于判断点击区域.
      */
     private class PathRegion{
         Path path;
@@ -592,5 +600,64 @@ public class BottomMenuLayout extends FrameLayout {
 
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.onItemClickListener = listener;
+    }
+
+    public void setRight(boolean isRight) {
+        this.isRight = isRight;
+    }
+
+    /**
+     * 增加一个view.
+     * @param resId 图片资源id.
+     * @param text item的文字.
+     * @param index 添加的位置,如果index为非法值则增加在最后一个位置.
+     * @param isInit 是否在初始化状态，减少不必要的初始化次数.
+     */
+    public void addItem(int resId, String text, int index, boolean isInit){
+        if (isShowing) hideMenu();
+        if (index >= getChildCount() - 1 || index < 0) {
+            index = getChildCount() - 1;
+        }
+        LayoutInflater inflater = LayoutInflater.from(layoutContext);
+        View view = inflater.inflate(R.layout.item_bottom_menu, null);
+        TextView textView = view.findViewById(R.id.item_text);
+        ImageView imageView = view.findViewById(R.id.item_icon);
+        imageView.setImageResource(resId);
+        textView.setText(text);
+        view.setScaleY(0);
+        view.setScaleX(0);
+        this.addView(view, index);
+        //如果不是初始状态，应当重新初始化
+        if (!isInit) {
+            this.post(new Runnable() {
+                @Override
+                public void run() {
+                    init();
+                }
+            });
+        }
+    }
+
+    /**
+     * 删除一个子view.
+     * @param index 删除子view的位置,index如果在非法的范围内则认为删除最后一个view.
+     * @param isInit 判断是否是初始化,减少不必要的初始化操作.
+     */
+    public void removeItemAt(int index, boolean isInit) {
+        if (index >= getChildCount() - 1 || index < 0) {
+            index = getChildCount() - 1;
+        }
+        if (isShowing) {
+            hideMenu();
+        }
+        this.removeViewAt(index);
+        if (!isInit) {
+            this.post(new Runnable() {
+                @Override
+                public void run() {
+                    init();
+                }
+            });
+        }
     }
 }

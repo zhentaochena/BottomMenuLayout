@@ -4,6 +4,7 @@ import android.app.ActionBar;
 import android.app.Service;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.IBinder;
@@ -43,7 +44,12 @@ public class FloatWindowService extends Service {
 
                 LayoutInflater inflater = LayoutInflater.from(this);
                 leftView = (BottomMenuLayout) inflater.inflate(R.layout.bootom_menu, null);
-                rightView = (BottomMenuLayout) inflater.inflate(R.layout.bottom_menu_right, null);
+                rightView = new BottomMenuLayout(this);
+                rightView.setBackgroundColor(Color.TRANSPARENT);
+                rightView.setRight(true);
+                rightView.addItem(R.mipmap.small_blackboard, "小黑板", 0, true);
+                rightView.addItem(R.mipmap.whiteboard, "白板", 8, true);
+
 
 
                 WindowManager.LayoutParams leftLayoutParams = new WindowManager.LayoutParams();
